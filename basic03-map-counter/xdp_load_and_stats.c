@@ -125,19 +125,19 @@ static void stats_print(struct stats_record *stats_rec,
 		char *fmt = "%-12s %'11lld pkts %lld bytes(%'10.0f pps)"
 			//" %'11lld Kbytes (%'6.0f Mbits/s)"
 			" period:%f\n";
-        for (int key = 0; key < XDP_ACTION_MAX; key++)       {
-        const char *action = action2str(key);
-        rec  = &stats_rec->stats[key];
-        prev = &stats_prev->stats[key];
+        for (int key = 0; key < XDP_ACTION_MAX; key++){
+        	const char *action = action2str(key);
+        	rec  = &stats_rec->stats[key];
+        	prev = &stats_prev->stats[key];
 
-        period = calc_period(rec, prev);
-        if (period == 0)
-            continue;
+        	period = calc_period(rec, prev);
+        	if (period == 0)
+            	continue;
 
-        packets = rec->total.rx_packets - prev->total.rx_packets;
-        pps     = packets / period;
+        	packets = rec->total.rx_packets - prev->total.rx_packets;
+        	pps     = packets / period;
 
-        printf(fmt, action, rec->total.rx_packets, rec->total.rx_bytes, pps, period);
+        	printf(fmt, action, rec->total.rx_packets, rec->total.rx_bytes, pps, period);
         }
 	}
 }
@@ -200,8 +200,7 @@ static bool map_collect(int fd, __u32 map_type, __u32 key, struct record *rec)
         map_get_value_percpu_array(fd, key, &value);
 	    break;
 	default:
-		fprintf(stderr, "ERR: Unknown map_type(%u) cannot handle\n",
-			map_type);
+		fprintf(stderr, "ERR: Unknown map_type(%u) cannot handle\n",map_type);
 		return false;
 		break;
 	}
