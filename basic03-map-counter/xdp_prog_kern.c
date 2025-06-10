@@ -9,7 +9,7 @@
  * - The idea is to keep stats per (enum) xdp_action
  */
 struct {
-	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
 	__type(key, __u32);
 	__type(value, struct datarec);
 	__uint(max_entries, XDP_ACTION_MAX);
@@ -25,11 +25,11 @@ struct {
 SEC("xdp")
 int  xdp_stats1_func(struct xdp_md *ctx)
 {
-	// void *data_end = (void *)(long)ctx->data_end;
-	// void *data     = (void *)(long)ctx->data;
+	void *data_end = (void *)(long)ctx->data_end;
+	void *data     = (void *)(long)ctx->data;
 	struct datarec *rec;
 	__u32 key = XDP_PASS; /* XDP_PASS = 2 */
-
+    
 	/* Lookup in kernel BPF-side return pointer to actual data record */
 	rec = bpf_map_lookup_elem(&xdp_stats_map, &key);
 	/* BPF kernel-side verifier will reject program if the NULL pointer
@@ -42,7 +42,9 @@ int  xdp_stats1_func(struct xdp_md *ctx)
 	/* Multiple CPUs can access data record. Thus, the accounting needs to
 	 * use an atomic operation.
 	 */
-	lock_xadd(&rec->rx_packets, 1);
+	rec->rx_packets += 1;
+    __u64 bytes = data_end - data; /* Calculate packet length */
+	rec->rx_bytes += bytes;
         /* Assignment#1: Add byte counters
          * - Hint look at struct xdp_md *ctx (copied below)
          *
