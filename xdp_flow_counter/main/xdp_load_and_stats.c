@@ -34,9 +34,13 @@ void print_flows_map(int map_fd){
     struct flow_key key = {0}, next_key;
     struct flow_val val;
     char src_ip[16], dst_ip[16];
+	int count = 0;
 
     printf("src_ip:src_port  -> dst_ip:dst_port  proto  pkts   bytes\n");
-    while(bpf_map_get_next_key(map_fd, NULL, &key) == 0){
+	
+	int ret = bpf_map_get_next_key(map_fd, NULL, &key);
+    
+	while(ret == 0 && count < 5){
         if (bpf_map_lookup_elem(map_fd, &key, &val) == 0){
             inet_ntop(AF_INET, &key.src_ip, src_ip, sizeof(src_ip));
             inet_ntop(AF_INET, &key.dst_ip, dst_ip, sizeof(dst_ip));
@@ -46,8 +50,9 @@ void print_flows_map(int map_fd){
                      key.proto,
                      val.packets,
                      val.bytes);
+			count++;
         }
-        if(bpf_map_get_next_key(map_fd, &key, &next_key) != 0) break;
+        ret = bpf_map_get_next_key(map_fd, &key, &next_key);
         key = next_key;
     }
 }
@@ -77,7 +82,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "Usage: %s -d <ifname>\n", argv[0]);
         return 1;
     }
-
+	//clean map
+	unlink("/sys/fs/bpf/xdp/flows"); 
     //
     program = xdp_program__open_file("xdp_prog_kern.o", "xdp", NULL);
     if (!program) {
@@ -108,17 +114,15 @@ int main(int argc, char **argv)
 
 	int ret = bpf_map__pin(flows_map, "/sys/fs/bpf/xdp/flows");
 	if (ret && ret != -EEXIST) {          
-		// -EEXIST 表示已經有舊檔，可視需求先 rm
     	fprintf(stderr, "pin map failed: %s\n", strerror(-ret));
     	return 1;
 	}
+	
+	
+	printf("等待 5 秒，讓 flows map 有流量進來...\n");
+	sleep(5);
 
-    //
-    for (int i = 0; i < 2; i++) {
-        print_flows_map(flows_map_fd);
-        sleep(1);
-    }
-
+    print_flows_map(flows_map_fd);
 
     return 0;
 }
