@@ -23,7 +23,8 @@ int find_map_fd(struct bpf_object *bpf_obj, const char *mapname)
         fprintf(stderr, "ERR: cannot find map by name: %s\n", mapname);
         goto out;
     }
-    map_fd = bpf_map__fd(map);
+    
+	map_fd = bpf_map__fd(map);
 out:
     return map_fd;
 }
@@ -97,6 +98,20 @@ int main(int argc, char **argv)
         xdp_program__close(program);
         return 1;
     }
+
+	//pin
+	struct bpf_map *flows_map = bpf_object__find_map_by_name(xdp_program__bpf_obj(program), "flows");
+	if (!flows_map) {
+    	fprintf(stderr, "找不到 flows map\n");
+    	return 1;
+	}
+
+	int ret = bpf_map__pin(flows_map, "/sys/fs/bpf/xdp/flows");
+	if (ret && ret != -EEXIST) {          
+		// -EEXIST 表示已經有舊檔，可視需求先 rm
+    	fprintf(stderr, "pin map failed: %s\n", strerror(-ret));
+    	return 1;
+	}
 
     //
     for (int i = 0; i < 2; i++) {
