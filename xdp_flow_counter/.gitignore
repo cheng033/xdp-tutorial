@@ -1,4 +1,4 @@
 *.o
 main/xdp_load_and_stats
 main/flow_collector
-
+*.csv
