@@ -1,11 +1,10 @@
-import socket as s
+import socket, time, os
 
-u = s.socket(s.AF_INET, s.SOCK_DGRAM)
-u.bind(("", 8080))
-print("UDP 8080 started")
-t = 0
+u=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); u.bind(('',8080))
+cnt,t=0,time.time()
+print("UDP 8080 started, pid",os.getpid())
+
 while True:
-    d, a = u.recvfrom(2048)
-    t += 1
-    print("pkts", t, "from", a)
-
+    u.recvfrom(2048); cnt+=1
+    if time.time()-t>1:
+        print("pkts/s",cnt); cnt=0; t=time.time()
