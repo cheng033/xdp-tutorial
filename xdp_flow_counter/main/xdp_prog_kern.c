@@ -7,7 +7,7 @@
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <linux/in.h>
-
+#include <bpf/bpf_endian.h>
 // flow counter map
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -46,13 +46,22 @@ int xdp_flow_func(struct xdp_md *ctx)
                     return XDP_PASS;
                 key.src_port = th->source;
                 key.dst_port = th->dest;
-            } else if (iph->protocol == IPPROTO_UDP) {
+
+                // syn flood
+                if (th->syn && !th->ack) 
+                    return XDP_DROP;
+
+             } else if (iph->protocol == IPPROTO_UDP) {
                 struct udphdr *uh = l4;
                 if ((void *)(uh + 1) > data_end)
                     return XDP_PASS;
                 key.src_port = uh->source;
                 key.dst_port = uh->dest;
-            }
+                
+                //丟8080 port
+                if (bpf_ntohs(uh->dest) == 8080) 
+                    return XDP_DROP;
+            }            
         }
         struct flow_val *val = bpf_map_lookup_elem(&flows, &key);
         if (!val) {

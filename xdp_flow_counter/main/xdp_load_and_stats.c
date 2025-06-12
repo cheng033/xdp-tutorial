@@ -34,13 +34,13 @@ void print_flows_map(int map_fd){
     struct flow_key key = {0}, next_key;
     struct flow_val val;
     char src_ip[16], dst_ip[16];
-	int count = 0;
+	//int count = 0;
 
     printf("src_ip:src_port  -> dst_ip:dst_port  proto  pkts   bytes\n");
 	
 	int ret = bpf_map_get_next_key(map_fd, NULL, &key);
     
-	while(ret == 0 && count < 5){
+	while(ret == 0){
         if (bpf_map_lookup_elem(map_fd, &key, &val) == 0){
             inet_ntop(AF_INET, &key.src_ip, src_ip, sizeof(src_ip));
             inet_ntop(AF_INET, &key.dst_ip, dst_ip, sizeof(dst_ip));
@@ -50,7 +50,6 @@ void print_flows_map(int map_fd){
                      key.proto,
                      val.packets,
                      val.bytes);
-			count++;
         }
         ret = bpf_map_get_next_key(map_fd, &key, &next_key);
         key = next_key;
